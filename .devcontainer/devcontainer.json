@@ -1,0 +1,22 @@
+{
+  "name": "Collaborative C DevContainer",
+  "build": {
+    "dockerfile": "../Dockerfile",
+    "context": ".."
+  },
+  "workspaceFolder": "/app",
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash"
+  },
+  "extensions": [
+    "ms-vscode.cpptools",
+    "ms-vscode.cmake-tools",
+    "ms-vscode.makefile-tools"
+  ],
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/app,type=bind,consistency=cached"
+  ],
+  "runArgs": ["--init"],
+  "postCreateCommand": "make clean && make all",
+  "remoteUser": "root"
+}

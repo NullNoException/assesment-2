@@ -1,0 +1,47 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "(gdb) Launch server",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "/app/server",
+      "args": ["1000"],
+      "stopAtEntry": false,
+      "cwd": "/app",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "build-server"
+    },
+    {
+      "name": "(gdb) Launch client",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "/app/client",
+      "args": ["1752", "bob"],
+      "stopAtEntry": false,
+      "cwd": "/app",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "build-client"
+    }
+  ]
+}

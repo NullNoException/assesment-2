@@ -1,0 +1,3 @@
+bob write
+eve read
+ryan write

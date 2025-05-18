@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  server:
+    build: . # Build the image from the Dockerfile in the current directory
+    container_name: collab_server
+    volumes:
+      # Mount the entire project directory into /app in the container
+      # Changes made locally will reflect inside the container, and vice-versa
+      - .:/app
+    # The entrypoint.sh script will handle starting the server
+    # with the default time interval (1000ms)
+    # command is not needed as it's specified in the Dockerfile CMD
+    # Keep stdin open and allocate a TTY to allow interaction (e.g., QUIT command)
+    stdin_open: true
+    tty: true
+    # Using default PID namespace isolation for container security
+    # The server and client will need to both run inside the container
