@@ -24,11 +24,27 @@ int connect_to_server(pid_t server_pid, const char *username)
 
     printf("Client PID: %d\n", getpid());
 
-    int fd_s2c = open(fifo_s2c, O_RDONLY); // Open for reading first
-    if (fd_s2c < 0)
+    // Give the server some time to create the FIFOs
+    // Add retry mechanism with timeout to open the FIFOs
+    int retry = 0;
+    const int max_retries = 5;
+    int fd_s2c = -1;
+
+    while (retry < max_retries && fd_s2c < 0)
     {
-        perror("Failed to open server-to-client FIFO");
-        return -1;
+        fd_s2c = open(fifo_s2c, O_RDONLY); // Open for reading first
+        if (fd_s2c < 0)
+        {
+            if (retry == max_retries - 1)
+            {
+                perror("Failed to open server-to-client FIFO");
+                return -1;
+            }
+            printf("Retrying to open server-to-client FIFO (attempt %d/%d)...\n",
+                   retry + 1, max_retries);
+            sleep(1); // Wait 1 second before retrying
+            retry++;
+        }
     }
 
     int fd_c2s = open(fifo_c2s, O_WRONLY); // Open for writing second
