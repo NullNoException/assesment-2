@@ -16,9 +16,10 @@
 #define MAX_CLIENTS 10
 
 // Structure to hold client information
-typedef struct {
+typedef struct
+{
     int pid;
-    int fd_s2c;  // Server to client file descriptor
+    int fd_s2c; // Server to client file descriptor
     bool connected;
     char username[64];
     char role[10]; // "read" or "write"
@@ -113,7 +114,8 @@ void *handle_client(void *arg)
     }
     pthread_mutex_unlock(&client_mutex);
 
-    if (client_index == -1) {
+    if (client_index == -1)
+    {
         write(fd_s2c, "Reject SERVER_FULL\n", 19);
         close(fd_c2s);
         close(fd_s2c);
@@ -121,7 +123,7 @@ void *handle_client(void *arg)
         unlink(fifo_s2c);
         return NULL;
     }
-    
+
     // Send role and document
     pthread_mutex_lock(&doc_mutex);
     char *docstr;
@@ -141,33 +143,40 @@ void *handle_client(void *arg)
 
         // Create response buffer
         char response[512] = {0};
-        
+
         // Execute the command if permissions allow
-        if (strncmp(cmd, "i ", 2) == 0 || strncmp(cmd, "d ", 2) == 0) {
+        if (strncmp(cmd, "i ", 2) == 0 || strncmp(cmd, "d ", 2) == 0)
+        {
             // These commands require write permission
-            if (strcmp(role, "write") == 0) {
+            if (strcmp(role, "write") == 0)
+            {
                 pthread_mutex_lock(&doc_mutex);
                 bool success = process_command(cmd, username, role, response, sizeof(response));
-                if (success) {
+                if (success)
+                {
                     // Increase version only for successful write operations
                     version++;
                 }
                 pthread_mutex_unlock(&doc_mutex);
-                
+
                 // Broadcast to all clients
                 broadcast_document_update(username, cmd, success ? "SUCCESS" : response);
-            } else {
+            }
+            else
+            {
                 // Read-only user tried to modify document
-                snprintf(response, sizeof(response), 
+                snprintf(response, sizeof(response),
                          "Reject UNAUTHORISED %c write read\n", cmd[0]);
                 write(fd_s2c, response, strlen(response));
             }
-        } else {
+        }
+        else
+        {
             // Other commands (read operations, etc.)
             pthread_mutex_lock(&doc_mutex);
             bool success = process_command(cmd, username, role, response, sizeof(response));
             pthread_mutex_unlock(&doc_mutex);
-            
+
             // For queries like DOC?, just send response to this client
             write(fd_s2c, response, strlen(response));
         }
@@ -178,7 +187,7 @@ void *handle_client(void *arg)
     clients[client_index].connected = false;
     client_count--;
     pthread_mutex_unlock(&client_mutex);
-    
+
     close(fd_c2s);
     close(fd_s2c);
     unlink(fifo_c2s);
@@ -205,22 +214,24 @@ void broadcast_document_update(const char *username, const char *command, const 
     char *docstr;
     size_t doclen;
     document_serialize(doc, &docstr, &doclen);
-    
+
     // Create update message
     char header[256];
-    snprintf(header, sizeof(header), "VERSION %lu\nEDIT %s %s %s\nEND\n", 
+    snprintf(header, sizeof(header), "VERSION %lu\nEDIT %s %s %s\nEND\n",
              version, username, command, response);
-    
+
     pthread_mutex_lock(&client_mutex);
-    for (int i = 0; i < MAX_CLIENTS; i++) {
-        if (clients[i].connected) {
+    for (int i = 0; i < MAX_CLIENTS; i++)
+    {
+        if (clients[i].connected)
+        {
             // Send update to each connected client
             write(clients[i].fd_s2c, header, strlen(header));
             send_document(clients[i].fd_s2c, clients[i].role, version, docstr, doclen);
         }
     }
     pthread_mutex_unlock(&client_mutex);
-    
+
     free(docstr);
 }
 
@@ -234,57 +245,66 @@ bool has_write_permission(const char *role)
 bool process_command(const char *cmd, const char *username, const char *role, char *response, size_t resp_size)
 {
     // Check for insert command: i <position> <text>
-    if (strncmp(cmd, "i ", 2) == 0) {
-        if (!has_write_permission(role)) {
+    if (strncmp(cmd, "i ", 2) == 0)
+    {
+        if (!has_write_permission(role))
+        {
             snprintf(response, resp_size, "Reject UNAUTHORISED INSERT write read");
             return false;
         }
-        
+
         int position;
         char text[256];
-        if (sscanf(cmd, "i %d %[^\n]", &position, text) == 2) {
-            if (position < 0 || position > (int)doc->length) {
+        if (sscanf(cmd, "i %d %[^\n]", &position, text) == 2)
+        {
+            if (position < 0 || position > (int)doc->length)
+            {
                 snprintf(response, resp_size, "Reject INVALID_POSITION");
                 return false;
             }
-            
+
             document_insert(doc, position, text);
             return true;
         }
     }
-    
+
     // Check for delete command: d <position> <count>
-    else if (strncmp(cmd, "d ", 2) == 0) {
-        if (!has_write_permission(role)) {
+    else if (strncmp(cmd, "d ", 2) == 0)
+    {
+        if (!has_write_permission(role))
+        {
             snprintf(response, resp_size, "Reject UNAUTHORISED DELETE write read");
             return false;
         }
-        
+
         int position, count;
-        if (sscanf(cmd, "d %d %d", &position, &count) == 2) {
-            if (position < 0 || position >= (int)doc->length) {
+        if (sscanf(cmd, "d %d %d", &position, &count) == 2)
+        {
+            if (position < 0 || position >= (int)doc->length)
+            {
                 snprintf(response, resp_size, "Reject INVALID_POSITION");
                 return false;
             }
-            
+
             document_delete(doc, position, count);
             return true;
         }
     }
-    
+
     // Check for DOC? command
-    else if (strcmp(cmd, "DOC?\n") == 0 || strcmp(cmd, "DOC?") == 0) {
+    else if (strcmp(cmd, "DOC?\n") == 0 || strcmp(cmd, "DOC?") == 0)
+    {
         char *docstr;
         size_t doclen;
         document_serialize(doc, &docstr, &doclen);
-        snprintf(response, resp_size, "VERSION %lu\nDOCUMENT (%zu bytes):\n%s", 
+        snprintf(response, resp_size, "VERSION %lu\nDOCUMENT (%zu bytes):\n%s",
                  version, doclen, docstr);
         free(docstr);
         return true;
     }
-    
+
     // Handle version query or other commands here
-    
+
     // Unknown command
     snprintf(response, resp_size, "Reject UNKNOWN_COMMAND");
     return false;
