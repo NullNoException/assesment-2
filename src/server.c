@@ -175,7 +175,15 @@ void *handle_client(void *arg)
     {
         // Process the command
         cmd[sizeof(cmd) - 1] = '\0';
-        printf("Received command from %s: %s", username, cmd);
+
+        // Remove trailing newline if present
+        size_t cmd_len = strlen(cmd);
+        if (cmd_len > 0 && cmd[cmd_len - 1] == '\n')
+        {
+            cmd[cmd_len - 1] = '\0';
+        }
+
+        printf("Received command from %s: %s\n", username, cmd);
 
         // Create response buffer
         char response[512] = {0};
@@ -652,6 +660,14 @@ bool process_command(const char *cmd, const char *username, const char *role, ch
             free(docstr);
             return false;
         }
+    }
+
+    // Check for empty command or just whitespace
+    else if (cmd[0] == '\0' || strspn(cmd, " \t\n\r") == strlen(cmd))
+    {
+        // Just return a simple OK for empty commands
+        snprintf(response, resp_size, "OK");
+        return true;
     }
 
     // Unknown command
